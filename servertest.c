@@ -29,8 +29,9 @@ void inject_error(int address, FILE *txt, char* timeinfo) {
     char address_string[15];
     sprintf(address_string, "%d", address);
     strcat(command, address_string);
-    printf("Main the command is %s\n", command);
+    // printf("Main the command is %s\n", command);
     system(command);
+    fflush(txt);
     fprintf(txt, "Injection: the random address is %d, injected at %s\n", address, timeinfo); 
     fflush(txt);
 }
@@ -39,6 +40,7 @@ int detect_error(FILE *txt, char* timeinfo) {
     fprintf(txt, "Detection: detectied at %s\n", timeinfo);
     fflush(txt);
     system("python ./cscripts_146/startCscriptsNill.py -a inband");
+    fflush(txt);
     return 0;
 }
 
@@ -62,9 +64,10 @@ int main(int argc,char *argv[]) {
         _parameter_deserialize(&parameter, paralog);
         fclose(paralog);
     }
+
     int restError = parameter.errorNum - parameter.injectionNum;
     int randnum[restError];
-    printf("Main process: rest error is %d\n", restError);
+    printf("Main process: # of rest error is %d\n", restError);
     srand(time(0));
     for(int i = 0; i < restError; i++) {
         randnum[i] = rand();
@@ -76,7 +79,6 @@ int main(int argc,char *argv[]) {
         exit(EXIT_FAILURE);
     }
     if(statpid > 0) {
-
         // grand-child process for errors detection
         detectpid = fork();
         if(detectpid < 0) {
@@ -98,7 +100,6 @@ int main(int argc,char *argv[]) {
                 restError = parameter.errorNum - parameter.injectionNum;
                 if(restError == 0)
                     break;
-
                 sleep(600); //wait 10 mins
             }
             fclose(derrorlog);
@@ -106,7 +107,7 @@ int main(int argc,char *argv[]) {
         }
 
         // monitor status
-        statlog = fopen("/var/log/Daemon-sample/stat.log", "a+");
+        statlog = fopen("/var/log/Daemon-sample/stat.log", "a");
         time(&rawtime);
         timeinfo = localtime(&rawtime);
         fprintf(statlog, "start at %spid is %d\n", asctime(timeinfo), getpid());
@@ -120,11 +121,12 @@ int main(int argc,char *argv[]) {
             _parameter_deserialize(&parameter, paralog);
             fclose(paralog);
             restError = parameter.errorNum - parameter.injectionNum;
-            printf("Child process: rest error is %d\n", restError);
+            printf("Child process: # of rest error is %d\n", restError);
             fflush(stdout);
+            if(restError == 0)
+                break;
             sleep(30); //wait 30 seconds
         }
-
         fclose(statlog);
         exit(EXIT_SUCCESS);
     }
@@ -138,12 +140,14 @@ int main(int argc,char *argv[]) {
         parameter.injectionNum++;
         // parameter.detectionNum = detect_error(ierrorlog, asctime(timeinfo));
         restError = parameter.errorNum - parameter.injectionNum;
+        printf("Main process: # of rest error is %d\n", restError);
+        fflush(stdout);
         paralog = fopen("/var/log/Daemon-sample/para.log", "w");
         _parameter_serialize(&parameter, paralog);
         fclose(paralog);
+        if(restError == 0)
+            break;
         sleep(rand()%216); // 6h for 100 errors
-        printf("Main process: rest error is %d\n", restError);
-        fflush(stdout);
     }
     fclose(ierrorlog);
     exit(EXIT_SUCCESS);
