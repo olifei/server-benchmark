@@ -29,7 +29,8 @@ static void _parameter_deserialize(struct parameters* para, FILE *txt) {
 void inject_error(int address, FILE *txt, char* timeinfo) {
     static numCE = 0;
     numCE++;
-    if (numCE % CE_UCE_RATIO == 0) { // inject UCE
+    // inject UCE
+    if (numCE % CE_UCE_RATIO == 0) { 
         char Ucommand[40] = "bash ./mce/UCE.sh ";
         char Uaddress_string[15];
         int Uaddress = rand();
@@ -76,7 +77,7 @@ int main(int argc,char *argv[]) {
         _parameter_serialize(&parameter, paralog);
         fclose(paralog);
     }
-    else {
+    else { // restart launch
         paralog = fopen("/var/log/Daemon-sample/para.log", "r");
         _parameter_deserialize(&parameter, paralog);
         fclose(paralog);
@@ -175,5 +176,5 @@ int main(int argc,char *argv[]) {
         fclose(ierrorlog);
         exit(EXIT_SUCCESS);
     }
-    
+    exit(EXIT_SUCCESS);
 }
