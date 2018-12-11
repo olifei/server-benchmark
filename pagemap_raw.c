@@ -1,5 +1,3 @@
-// transfer code ref: http://fivelinesofcode.blogspot.com/2014/03/how-to-translate-virtual-to-physical.html
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -98,3 +96,4 @@ int read_pagemap(char * path_buf, unsigned long virt_addr){
     fclose(f);
     return 0;
 }
+// code ref: http://fivelinesofcode.blogspot.com/2014/03/how-to-translate-virtual-to-physical.html
