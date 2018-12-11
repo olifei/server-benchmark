@@ -27,7 +27,7 @@ static void _parameter_deserialize(struct parameters* para, FILE *txt) {
 };
 
 void inject_error(int address, FILE *txt, char* timeinfo) {
-    static numCE = 0;
+    static int numCE = 0;
     numCE++;
     // inject UCE
     if (numCE % CE_UCE_RATIO == 0) { 
@@ -96,7 +96,7 @@ int main(int argc,char *argv[]) {
 
     // process for workload
     workloadpid = fork();
-    if (workload < 0) {
+    if (workloadpid < 0) {
         exit(EXIT_FAILURE);
     }
     if (workloadpid > 0) { // workload
