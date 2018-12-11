@@ -1,0 +1,9 @@
+Count errors in derror.log
+
+Regular expression:
+socket[0,1,2,3].uncore0.imc[0,1]_c[0,1,2]_correrrcnt_[0,1,2,3].cor_err_cnt_[0,1]
+
+Script:
+grep -n "Detection: " derror.log | tail -n 1
+tail –n +<last_line_num> > derrir_last.log
+grep "socket[0-9]\.uncore[0-9]\.imc[0-9]_c[0-9]_correrrcnt_[0-9]\.cor_err_cnt_[0-9]" derror_last.log > derror_cnt.log
