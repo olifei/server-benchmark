@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2018 Intel Corporation
+* Authors: Qin, Zhang
+*
+* This software may be redistributed and/or modified under the terms of
+* the GNU General Public License ("GPL") version 2 only as published by the
+* Free Software Foundation.
+*/
+/*
+* Set up to get zapped by a machine check (injected elsewhere)
+* recovery function reports physical address of new page - so
+* we can inject to that and repeat over and over.
+* With "-t" flag report physical address of a ".text" (code) page
+* so we will test the instruction fault path - otherwise report
+* an allocated data page.
+*/
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
