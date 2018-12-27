@@ -14,8 +14,10 @@
 * so we will test the instruction fault path - otherwise report
 * an allocated data page.
 */
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -89,12 +91,12 @@ int main(int argc,char *argv[]) {
         parameter.errorNum = atoi(argv[1]);
         parameter.injectionNum = 0;
         parameter.detectionNum = 0;
-        paralog = fopen("/var/log/Daemon-sample/para.log", "w");
+        paralog = fopen("../log/para.log", "w");
         _parameter_serialize(&parameter, paralog);
         fclose(paralog);
     }
     else { // restart launch
-        paralog = fopen("/var/log/Daemon-sample/para.log", "r");
+        paralog = fopen("../log/para.log", "r");
         _parameter_deserialize(&parameter, paralog);
         fclose(paralog);
     }
@@ -115,8 +117,12 @@ int main(int argc,char *argv[]) {
     if (workloadpid < 0) {
         exit(EXIT_FAILURE);
     }
-    if (workloadpid > 0) { // workload
-        char *workload = "sh /root/test/Daemon-sample/workload.sh";
+    if (workloadpid == 0) { // workload
+        prctl(PR_SET_PDEATHSIG, SIGKILL);
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
+        char *workload = "sh ./workload.sh";
         system(workload);
         exit(EXIT_SUCCESS);
     }
@@ -126,8 +132,8 @@ int main(int argc,char *argv[]) {
     if(statpid < 0) {
         exit(EXIT_FAILURE);
     }
-    if(statpid > 0) { // status
-        statlog = fopen("/var/log/Daemon-sample/stat.log", "a");
+    if(statpid == 0) { // status
+        statlog = fopen("../log/stat.log", "a");
         time(&rawtime);
         timeinfo = localtime(&rawtime);
         fprintf(statlog, "start at %spid is %d\n", asctime(timeinfo), getpid());
@@ -137,11 +143,11 @@ int main(int argc,char *argv[]) {
             timeinfo = localtime(&rawtime);
             fprintf(statlog, "alive at %s\n", asctime(timeinfo));
             fflush(statlog);
-            paralog = fopen("/var/log/Daemon-sample/para.log", "r");
+            paralog = fopen("../log/para.log", "r");
             _parameter_deserialize(&parameter, paralog); // read log
             fclose(paralog);
             restError = parameter.errorNum - parameter.injectionNum;
-            printf("Child process: # of rest error is %d\n", restError);
+            printf("Monitor process: # of rest error is %d\n", restError);
             fflush(stdout);
             if(restError == 0)
                 break;
@@ -156,13 +162,16 @@ int main(int argc,char *argv[]) {
     if(detectpid < 0) {
         exit(EXIT_FAILURE);
     }
-    if(detectpid > 0) { // detection
-        derrorlog = fopen("/var/log/Daemon-sample/derror.log", "a");
+    if(detectpid == 0) { // detection
+        //close(STDIN_FILENO);
+        //close(STDOUT_FILENO);
+        //close(STDERR_FILENO);
+        derrorlog = fopen("../log/derror.log", "a");
         time(&rawtime);
         timeinfo = localtime(&rawtime);
         fflush(derrorlog);
         while(restError) {
-            paralog = fopen("/var/log/Daemon-sample/para.log", "r");
+            paralog = fopen("../log/para.log", "r");
             _parameter_deserialize(&parameter, paralog); // read log
             time(&rawtime);
             timeinfo = localtime(&rawtime);
@@ -179,7 +188,7 @@ int main(int argc,char *argv[]) {
     }
     
     // main process for errors injection
-    ierrorlog = fopen("/var/log/Daemon-sample/ierror.log", "a");
+    ierrorlog = fopen("../log/ierror.log", "a");
     for(int i= 0; restError > 0; i++) {
         time(&rawtime);
         timeinfo = localtime(&rawtime);
@@ -189,13 +198,21 @@ int main(int argc,char *argv[]) {
         restError = parameter.errorNum - parameter.injectionNum;
         printf("Main process: # of rest error is %d\n", restError);
         fflush(stdout);
-        paralog = fopen("/var/log/Daemon-sample/para.log", "w");
+        paralog = fopen("../log/para.log", "w");
         _parameter_serialize(&parameter, paralog); // write log
         fclose(paralog);
         if(restError == 0)
             break;
         sleep(rand()%432); // average 100 errors during 6 hours
+        /*for example, 6hours=6*60*60=21600seconds
+                       21600/100 = 216seconds/error
+          so the expectation for each error is 216s
+          we set rand()%(2*216) to get that expectation, which is rand()%432
+        */
     }
     fclose(ierrorlog);
+//    kill(workloadpid, SIGKILL);
     exit(EXIT_SUCCESS);
 }
+
+
