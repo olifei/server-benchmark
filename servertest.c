@@ -118,12 +118,18 @@ int main(int argc,char *argv[]) {
         exit(EXIT_FAILURE);
     }
     if (workloadpid == 0) { // workload
-        prctl(PR_SET_PDEATHSIG, SIGKILL);
+        //prctl(PR_SET_PDEATHSIG, SIGKILL);
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
         char *workload = "sh ./workload.sh";
-        system(workload);
+        while(restError) {
+            system(workload);
+            paralog = fopen("../log/para.log", "r");
+            _parameter_deserialize(&parameter, paralog); // read log
+            fclose(paralog);
+            restError = parameter.errorNum - parameter.injectionNum;
+        }
         exit(EXIT_SUCCESS);
     }
 
@@ -214,5 +220,3 @@ int main(int argc,char *argv[]) {
 //    kill(workloadpid, SIGKILL);
     exit(EXIT_SUCCESS);
 }
-
-
